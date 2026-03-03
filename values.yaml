@@ -1,4 +1,14 @@
 # Baseline Lidarr. Override ingress host, persistence (existingClaim), postgresql (existingSecret), onepassworditem.items in your values.
+# PostgreSQL: use embedded Bitnami (postgresql.enabled, default) or CloudNativePG operator (postgresqlOperator.enabled).
+postgresqlOperator:
+  enabled: false
+  clusterName: lidarr-postgresql
+  instances: 1
+  storageSize: 5Gi
+  storageClass: ""
+  bootstrap:
+    existingSecret: ""
+
 lidarr:
   global:
     fullnameOverride: lidarr
@@ -98,6 +108,7 @@ lidarr:
         - path: /config/extended/import
 
 postgresql:
+  enabled: true
   architecture: standalone
   auth:
     database: lidarr-main
@@ -111,6 +122,21 @@ postgresql:
       requests:
         cpu: "1"
         memory: 2Gi
+
+externalSecrets:
+  enabled: false
+  refreshInterval: 1h
+  secretStoreRef:
+    name: onepassword-connect
+    kind: ClusterSecretStore
+  configXml:
+    secretName: lidarr
+    apiKeyRef:
+      key: lidarr
+      property: api_key
+    postgresCredentialsRef:
+      key: lidarr-postgresql-credentials
+      property: password
 
 onepassworditem:
   enabled: true
