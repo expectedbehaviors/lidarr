@@ -1,10 +1,23 @@
 # Baseline Lidarr. Override ingress host, persistence (existingClaim), postgresql (existingSecret), onepassworditem.items in your values.
+# Database mode for config.xml rendering is externalSecrets.configXml.database.
+# Defaults to sqlite (no Postgres block in config.xml) unless explicitly set.
+postgresqlOperator:
+  enabled: false
+  clusterName: lidarr-postgresql
+  instances: 1
+  storageSize: 5Gi
+  storageClass: ""
+  bootstrap:
+    existingSecret: ""
+
 lidarr:
   global:
     fullnameOverride: lidarr
   controllers:
     main:
       enabled: true
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
       defaultContainerOptions:
         image:
           repository: linuxserver/lidarr
@@ -98,6 +111,7 @@ lidarr:
         - path: /config/extended/import
 
 postgresql:
+  enabled: false
   architecture: standalone
   auth:
     database: lidarr-main
@@ -111,6 +125,43 @@ postgresql:
       requests:
         cpu: "1"
         memory: 2Gi
+
+externalSecrets:
+  enabled: false
+  refreshInterval: 1h
+  secretStoreRef:
+    name: onepassword-connect
+    kind: ClusterSecretStore
+  configXml:
+    secretName: lidarr
+    apiKeyRef:
+      key: lidarr
+      property: api_key
+    database: sqlite # sqlite|bitnami|operator|external
+    postgres:
+      user: postgres
+      port: "5432"
+      host: ""
+      mainDb: lidarr-main
+      logDb: lidarr-log
+      credentialsRef:
+        key: lidarr-postgresql-credentials
+        property: password
+    options:
+      logLevel: Info
+      port: "8686"
+      urlBase: ""
+      bindAddress: "*"
+      sslPort: "8686"
+      enableSsl: "False"
+      authenticationMethod: Basic
+      branch: nightly
+      launchBrowser: "False"
+      updateMechanism: Docker
+      analyticsEnabled: "False"
+      updateAutomatically: "True"
+      instanceName: Lidarr
+    # additionalOptions: {} # map of extra <Key>Value</Key> elements to append into config.xml
 
 onepassworditem:
   enabled: true
